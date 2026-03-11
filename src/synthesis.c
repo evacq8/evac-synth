@@ -40,7 +40,7 @@ void note_off(Note notes[], int notenum) {
 }
 
 int main() {
-	snd_pcm_t *pcm = initialize_pcm();
+	snd_pcm_t *pcm = initialize_pcm("default");
 	if(!pcm) return 1;
 	snd_seq_t *seq = initialize_seq();
 	if(!seq) return 1;

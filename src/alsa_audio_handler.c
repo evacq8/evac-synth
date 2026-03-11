@@ -18,8 +18,9 @@ To play the audio the script will:
 
 /* This function handles opening the PCM device, configuring hardware params, and preparing the device.
  * Returns the PCM device handle.
+ * Give in a string of the device name (use
  */
-snd_pcm_t* initialize_pcm() {
+snd_pcm_t* initialize_pcm(char device_name[]) {
 
 	// + INITIALIZE PCM DEVICE +
 	snd_pcm_t *soundDevice; // Sound device handle
@@ -36,7 +37,7 @@ snd_pcm_t* initialize_pcm() {
 	 * 	argument 4 - '0' enables blocking mode. pauses program while calling write functions
 	 * 	return - returns negative values if errors occured
 	 */
-	err_sound_device = snd_pcm_open(&soundDevice, "default", SND_PCM_STREAM_PLAYBACK, 0);
+	err_sound_device = snd_pcm_open(&soundDevice, device_name, SND_PCM_STREAM_PLAYBACK, 0);
 	if(err_sound_device < 0) {
 		printf("Whoopse, couldn't open PCM device: %s\n", snd_strerror(err_sound_device));
 		return NULL;

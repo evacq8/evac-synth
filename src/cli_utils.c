@@ -27,6 +27,7 @@ void draw_menu(char *options[], int selected_entry) {
 	fflush(stdout);
 }
 
+// This function takes in a pointer array of string options and returns the index of the one that was selected.
 int cli_menu(char *options[]) {
 	char ch;
 	struct termios oldt, newt;
