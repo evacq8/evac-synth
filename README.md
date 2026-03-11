@@ -3,10 +3,18 @@ I really suck at programming and I'm sure theres way better ways of doing things
 
 **main.c**
 * Entry point
+
 **alsa_audio_handler.c/.h**
 * Handles creating PCM device and writing to buffer for ALSA linux
+
+**alsa_midi_handler.c/.h**
+* Handles creating MIDI Seq and getting input from ALSA linux
+
 **synthesis.c/.h**
 * Contains functions that generate synth noises and notes
+
+**cli_utils.c/.h**
+* Helper functions for cli menus n stuff
 
 # To-do
 - [x] Open PCM device

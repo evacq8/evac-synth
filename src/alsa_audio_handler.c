@@ -14,7 +14,7 @@ To play the audio the script will:
 #include <stdio.h>
 #include <alsa/asoundlib.h> // required for working with alsa
 #include "alsa_audio_handler.h"
-#include <math.h>
+#include "cli_utils.h"
 
 /* This function handles opening the PCM device, configuring hardware params, and preparing the device.
  * Returns the PCM device handle.
@@ -23,6 +23,10 @@ snd_pcm_t* initialize_pcm() {
 
 	// + INITIALIZE PCM DEVICE +
 	snd_pcm_t *soundDevice; // Sound device handle
+	
+	// Prompt user for which device to use...
+	
+
 	int err_sound_device = -1; // Did error occur whilst creating handle?
 	/* This line assigns handle to soundDevice
 	 *	argument 1 - tells to assign the handle to soundDevice
