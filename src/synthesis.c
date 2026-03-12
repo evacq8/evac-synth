@@ -1,5 +1,6 @@
 #include "alsa_audio_handler.h"
 #include "alsa_midi_handler.h"
+#include "oscillator.h"
 #include <stdio.h>
 #include <math.h>
 #include <alsa/asoundlib.h>
@@ -9,7 +10,7 @@
 typedef struct {
 	int note; // Range: 0-127, where 127 is G9 and 0 is C-1
 	float velocity; // How hard the note was pressed on the midi controller. (127 max)
-	float phase; // Current oscillator phase of this note
+	float phase; // Current NORMALIZED (0.0 - 1.0) oscillator phase of this note
 	float increment; // How much to add to phase for this note?
 	int active; // is note being pressed?
 } Note;
@@ -21,9 +22,9 @@ void note_on(Note notes[], int notenum, int velocity) {
 			notes[i].note = notenum;
 			notes[i].velocity = velocity;
 			// randomize phase to stop massive contructive interference when many notes are played at once
-			notes[i].phase = ((float)rand()/RAND_MAX)*2*M_PI; 			
+			notes[i].phase = ((float)rand()/RAND_MAX);
 			float freq = 440*pow(2, (float)(notenum - 69)/12); // Convert notenum to frequency
-			notes[i].increment = (2*M_PI*freq)/44100; // Convert frequency to increment
+			notes[i].increment = freq/44100; // Convert frequency to increment
 			notes[i].active = 1;
 			break; // do NOT search anymore
 		}
@@ -52,32 +53,36 @@ int main() {
 	 *	Note: int16_t has range of -32,768 to +32,767
 	 */
 	int16_t buffer[8192];
-	Note notes[MAX_NOTES]; // 16 max notes
+	Note notes[MAX_NOTES] = {0}; // 16 max notes
+	
+	// Set oscillator:
+	set_wave_table_oscillator(OSCILLATOR_TRIANGLE);
 	while(1) {
 		// + Convert midi events to note elements to add to notes[] +
 		
 		// + Synthesis +
 		for(int i = 0; i < 4096; i++) {
-snd_seq_event_t *ev;
-		// Read all pending sequencer events
-		while(snd_seq_event_input_pending(seq, 1)>0) {
-    		snd_seq_event_input(seq, &ev);
-    		if(ev->type == SND_SEQ_EVENT_NOTEON) {
-				note_on(notes, ev->data.note.note, ev->data.note.velocity);
-			} else if(ev->type == SND_SEQ_EVENT_NOTEOFF) {
-				note_off(notes, ev->data.note.note);
+			snd_seq_event_t *ev;
+			// Read all pending sequencer events
+			while(snd_seq_event_input_pending(seq, 1)>0) {
+				snd_seq_event_input(seq, &ev);
+				if(ev->type == SND_SEQ_EVENT_NOTEON) {
+					note_on(notes, ev->data.note.note, ev->data.note.velocity);
+				} else if(ev->type == SND_SEQ_EVENT_NOTEOFF) {
+					note_off(notes, ev->data.note.note);
+				}
+				snd_seq_free_event(ev);
 			}
-			snd_seq_free_event(ev);
-		}
 
-
+			// AUDIO LOOP
 			int16_t mixed_sample=0; // A mix of all samples created by each note
 			for(int n = 0; n < MAX_NOTES; n++) {
-				if(notes[n].active != 1) continue; // IGNORE UNACTIVE NOTES!
-				if(notes[n].phase>=2*M_PI) notes[n].phase-=2*M_PI; // reset phase when making full oscilation
+				if (notes[n].active != 1) continue; // IGNORE UNACTIVE NOTES!
 				notes[n].phase+=notes[n].increment; // add increment to phase
-				mixed_sample+=sin(notes[n].phase)*10000*(notes[n].velocity/127); // add this notes stuff to the mixed sample
+				while (notes[n].phase >= 1) notes[n].phase -= 1; // reset phase when making full oscilation
 
+				
+				mixed_sample+=get_wave_table_sample(notes[n].phase)*10000*(notes[n].velocity/127); // add this notes stuff to the mixed sample
 			}
 
 			// Soft clipping

@@ -1,37 +1,32 @@
-Hi! This is just a dumb synth project I'm doing for fun to learn audio programming.
-I really suck at programming and I'm sure theres way better ways of doing things, I'm just doing them the easiest way based on what I found online.
+# evac-synth: 2$ ALSA Synth C Program 
 
-**main.c**
-* Entry point
+A really badly made (Currently work in progress) synthesizer I'm trying to make to learn DSP, written in C. It currently uses ALSA for playing audio and connecting to a MIDI input device, and Termios for live input, so it does not work on windows.
 
-**alsa_audio_handler.c/.h**
-* Handles creating PCM device and writing to buffer for ALSA linux
+Also, currently, it is a standalone program and not a plugin, so you cannot easily use it in a DAW. (Unless you do some finicking + high latency).
 
-**alsa_midi_handler.c/.h**
-* Handles creating MIDI Seq and getting input from ALSA linux
+This project probably won't get far but atleast I'll learn from it.
 
-**synthesis.c/.h**
-* Contains functions that generate synth noises and notes
+# Current Stuff
 
-**cli_utils.c/.h**
-* Helper functions for cli menus n stuff
+* Takes in MIDI Input + adjusts volume based on velocity
+* Selection Menu for MIDI Devices
+* Sine Wave Oscillator
+* It's Polyphonic [Wow what a huge accomplishment (sarcasm)]
+* Really bad soft clipping (tanhf)
 
 # To-do
-- [x] Open PCM device
-- [x] Configure hardware parameters
-- [x] Prepare PCM device
-- [x] Generate test audio samples
-- [x] Write samples
-- [ ] PCM Cleanup Function
-- [x] Write To Buffer Function
-- [x] Link files alsa_audio_handler.c with synthesis.c
-- [x] Add phase accumulator to synth
-- [x] Set up alsa_midi_handler.c
-- [x] Play notes with midi controller
-- [x] Create a struct to manage currently held-down notes (with their velocities)
-- [x] Figure out how to add two tones
-- [x] Make synth polyphonetic
-- [x] Soft clipping using tanhf
-- [ ] Attack, Decay, Sustain, Release Envelopes
-- [ ] PCM & Midi Device selector menus
 
+Next:
+- [ ] More Oscillators: Square, Sawtooth, Triangle
+- [ ] Attack, Decay, Sustain, Release Envelopes
+
+Later:
+- [ ] Handle clipping better
+- [ ] Delay & Reverb
+- [ ] Band-Pass Filters (& Formants)
+- [ ] Overtones
+
+Technical Stuff:
+- [x] MIDI Device selector menus
+- [ ] Clean up MIDI setup function
+- [ ] PCM Cleanup Function

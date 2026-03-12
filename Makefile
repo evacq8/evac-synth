@@ -7,7 +7,8 @@ LIBS = -lasound -lm
 SRCS =	src/synthesis.c \
 		src/alsa_audio_handler.c \
 		src/alsa_midi_handler.c \
-		src/cli_utils.c
+		src/cli_utils.c \
+		src/oscillator.c
 
 TARGET = build
 
