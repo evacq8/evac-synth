@@ -2,6 +2,7 @@
 #include "alsa_midi_handler.h"
 #include "oscillator.h"
 #include "envelope.h"
+#include "filter.h"
 
 #include <stdio.h>
 #include <math.h>
@@ -72,7 +73,15 @@ int main() {
 	Note notes[MAX_NOTES] = {0}; // 16 max notes
 	
 	// Set oscillator:
-	set_wave_table_oscillator(OSCILLATOR_SQUARE);
+	set_wave_table_oscillator(OSCILLATOR_SAW);
+	
+	BiquadVariables formant1;
+	biquad_setup_bandpass(270, 8, &formant1);
+	BiquadVariables formant2;
+	biquad_setup_bandpass(2290, 12, &formant2);
+	BiquadVariables formant3;
+	biquad_setup_bandpass(3010, 14, &formant3);
+
 	while(1) {
 		// + Convert midi events to note elements to add to notes[] +
 		
@@ -94,12 +103,22 @@ int main() {
 			int16_t mixed_sample=0; // A mix of all samples created by each note
 			for(int n = 0; n < MAX_NOTES; n++) {
 				if (notes[n].env_state == ENVELOPE_FREE) continue; // IGNORE UNACTIVE (i.e. free) NOTES!
+				
+				// sample = oscillator * 10,000 * velocity * env_level
+				int16_t current_sample = get_wave_table_sample(notes[n].phase)*10000*(notes[n].velocity/127)*notes[n].env_level;
+
 				notes[n].phase+=notes[n].increment; // add increment to phase
 				while (notes[n].phase >= 1) notes[n].phase -= 1; // reset phase when making full oscilation
 				envelope_tick(&notes[n].env_level, &notes[n].env_state); // Update envelope states and level
-				// sample = oscillator * 10,000 * velocity * env_level
-				mixed_sample+=get_wave_table_sample(notes[n].phase)*10000*(notes[n].velocity/127)*notes[n].env_level; // add this notes stuff to the mixed sample
+
+				mixed_sample+=current_sample; // add this notes stuff to the mixed sample
 			}
+
+			int16_t f1_output = biquad_filter(mixed_sample, &formant1);
+			int16_t f2_output = biquad_filter(mixed_sample, &formant2);
+			int16_t f3_output = biquad_filter(mixed_sample, &formant3);
+
+			mixed_sample = (f1_output/3)+(f2_output/3)+(f3_output/3);
 
 			// Soft clipping
 			float norm = mixed_sample / 32767.0f;

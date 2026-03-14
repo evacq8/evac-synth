@@ -9,7 +9,8 @@ SRCS =	src/synthesis.c \
 		src/alsa_midi_handler.c \
 		src/cli_utils.c \
 		src/oscillator.c \
-		src/envelope.c
+		src/envelope.c \
+		src/filter.c
 
 TARGET = build
 
