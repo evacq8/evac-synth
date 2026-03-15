@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <oscillator.h>
 
-#define LOOK_UP_TABLE_SIZE 2048
 
 
 // OSCILLATOR FUNCTIONS BELOW:
@@ -26,52 +25,64 @@ int16_t saw_oscillator(float phase) {
 int16_t triangle_oscillator(float phase) {
 	return (int16_t)((fabsf(phase - 0.5f) * 4.0f - 1.0f) * 32767.0f);
 }
+int16_t glottal_oscillator(float phase) { // used to mimic sound produced in human voice box
+	float val = 0.0f;
+	if (phase < 0.7f) {
+		float normalized_phase = phase / 0.7f;
+		// Sine squared
+		val = sinf(normalized_phase * M_PI);
+		val *= val;
+	} else { val = 0.0f; }
+	return (int16_t)((val - 0.25f) * 32767.0f);
+}
 // OSCILLATOR FUNCTION END
 
 
 // Look up table for oscillator outputs for normalized period values from 0-1
 // Stores at int16_t (instead of float) for memory saving
-int16_t wave_lookup_table[LOOK_UP_TABLE_SIZE];
+//int16_t wave_lookup_table[OSCILLATOR_TABLE_SIZE];
 
-// Takes in a function pointer (for an oscillator function)
+// Takes in a function pointer (for an oscillator function) and wave_table pointer
 // Then it populates the wave_lookup_table using that function
-void populate_wave_table(int16_t (*function)(float)) {
-	for(int i=0; i < LOOK_UP_TABLE_SIZE; i++) {
-		wave_lookup_table[i] = function((float)i/(float)LOOK_UP_TABLE_SIZE);
+void populate_wave_table(int16_t (*function)(float), int16_t *table) {
+	for(int i=0; i < OSCILLATOR_TABLE_SIZE; i++) {
+		table[i] = function((float)i/(float)OSCILLATOR_TABLE_SIZE);
 	}
 	printf("Populated Wave Table.\n");
 }
 
 // This higher-level function populates wavetable with the OscillatorType ENUM used to represent different oscillators using the previous function
-void set_wave_table_oscillator(OscillatorType type) {
+void set_wave_table_oscillator(OscillatorType type, int16_t *table) {
 	switch(type) {
 		case OSCILLATOR_SINE:
-			populate_wave_table(sine_oscillator);
+			populate_wave_table(sine_oscillator, table);
 			break;
 		case OSCILLATOR_SQUARE:
-			populate_wave_table(square_oscillator);
+			populate_wave_table(square_oscillator, table);
 			break;
 		case OSCILLATOR_SAW:
-			populate_wave_table(saw_oscillator);
+			populate_wave_table(saw_oscillator, table);
 			break;
 		case OSCILLATOR_TRIANGLE:
-			populate_wave_table(triangle_oscillator);
+			populate_wave_table(triangle_oscillator, table);
 			break;
+		case OSCILLATOR_GLOTTAL:
+			populate_wave_table(glottal_oscillator, table);
 		default:
 			break;
 	}
 }
 
-// This function gets a sample from the lookup table for the given phase
+// This function gets a sample from the lookup table for the given phase (normalized to -1.0 - 1.0)
 // Make sure you pass a normalized phase between 0.0-1.0
-float get_wave_table_sample(float phase) {
+float get_wave_table_sample(float phase, int16_t *table) {
 
-	float f_idx = phase*LOOK_UP_TABLE_SIZE; // Float index
+	float f_idx = phase*OSCILLATOR_TABLE_SIZE; // Float index
 	// Linearly interpolate between the two nearest samples.
-	int d_idx = (int)f_idx % LOOK_UP_TABLE_SIZE; // Integer index (floor for positive numbers, ceil for negative numbers)
-	int16_t sample1 = wave_lookup_table[d_idx];
+	int d_idx = (int)f_idx % OSCILLATOR_TABLE_SIZE; // Integer index (floor for positive numbers, ceil for negative numbers)
+	int16_t sample1 = table[d_idx];
 	// Use modulo by size to prevent accessing index [table_size+1] if we're on the very last sample
-	int16_t sample2 = wave_lookup_table[(d_idx+1) % LOOK_UP_TABLE_SIZE];
+	int16_t sample2 = table[(d_idx+1) % OSCILLATOR_TABLE_SIZE];
 
 	return (float)((f_idx-d_idx)*(sample2 - sample1) + sample1)/32768;
 }

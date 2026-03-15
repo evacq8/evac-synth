@@ -12,10 +12,10 @@
  * */
 
 // All times are in seconds.
-float attack_time = 0.005;
-float decay_time = 0.5;
+float attack_time = 0.25;
+float decay_time = 0.2;
 float sustain_level = 0.7f;
-float release_time = 0.8;
+float release_time = 0.5;
 void envelope_tick(float *env_level, EnvelopeState *env_state) {
 	if(*env_state == ENVELOPE_SUSTAIN) return; // No changes needed if its at sustain (sustain -> release transition handled in note_off func)
 	float delta_time = 1.0f/44100; // seconds

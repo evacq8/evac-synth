@@ -14,6 +14,7 @@ typedef struct {
 	int note; // Range: 0-127, where 127 is G9 and 0 is C-1
 	float velocity; // How hard the note was pressed on the midi controller. (127 max)
 	float phase; // Current NORMALIZED (0.0 - 1.0) oscillator phase of this note
+	float vibrato_phase; // extra LFO vibrato phase
 	float increment; // How much to add to phase for this note?
 
 	EnvelopeState env_state; // Current envelope state of the note (see envelope.h for all)
@@ -70,17 +71,20 @@ int main() {
 	 *	Note: int16_t has range of -32,768 to +32,767
 	 */
 	int16_t buffer[8192];
-	Note notes[MAX_NOTES] = {0}; // 16 max notes
+	Note notes[MAX_NOTES] = {0};
 	
-	// Set oscillator:
-	set_wave_table_oscillator(OSCILLATOR_SAW);
+	// Create oscillator look up tables
+	int16_t fundamental_osc_table[OSCILLATOR_TABLE_SIZE]; // oscillator which creates base sound
+	set_wave_table_oscillator(OSCILLATOR_GLOTTAL, fundamental_osc_table);
+	int16_t vibrato_osc_table[OSCILLATOR_TABLE_SIZE]; // LFO which controls pitch variations
+	set_wave_table_oscillator(OSCILLATOR_SINE, vibrato_osc_table);
 	
 	BiquadVariables formant1;
-	biquad_setup_bandpass(270, 8, &formant1);
+	biquad_setup_bandpass(850, 20, &formant1);
 	BiquadVariables formant2;
-	biquad_setup_bandpass(2290, 12, &formant2);
+	biquad_setup_bandpass(1220, 25, &formant2);
 	BiquadVariables formant3;
-	biquad_setup_bandpass(3010, 14, &formant3);
+	biquad_setup_bandpass(2800, 25, &formant3);
 
 	while(1) {
 		// + Convert midi events to note elements to add to notes[] +
@@ -105,9 +109,19 @@ int main() {
 				if (notes[n].env_state == ENVELOPE_FREE) continue; // IGNORE UNACTIVE (i.e. free) NOTES!
 				
 				// sample = oscillator * 10,000 * velocity * env_level
-				int16_t current_sample = get_wave_table_sample(notes[n].phase)*10000*(notes[n].velocity/127)*notes[n].env_level;
+				int16_t current_sample = get_wave_table_sample(notes[n].phase,fundamental_osc_table)*10000*(notes[n].velocity/127)*notes[n].env_level;
 
-				notes[n].phase+=notes[n].increment; // add increment to phase
+				// aspiration
+				current_sample += (0.0015*32768*notes[n].env_level) * (((float)rand() / (float)RAND_MAX)*2 - 1);
+
+
+				// Increment phase
+				float vibrato_wobble = get_wave_table_sample(notes[n].vibrato_phase,vibrato_osc_table);
+				while (notes[n].vibrato_phase >= 1) notes[n].vibrato_phase -= 1;
+				notes[n].vibrato_phase += 5.5f / 44100.0f; // increment vibrato oscillator
+				notes[n].phase+=notes[n].increment * (1.0f + (vibrato_wobble * 0.005f * notes[n].env_level)); // increment fundimental phase
+
+
 				while (notes[n].phase >= 1) notes[n].phase -= 1; // reset phase when making full oscilation
 				envelope_tick(&notes[n].env_level, &notes[n].env_state); // Update envelope states and level
 
@@ -118,12 +132,7 @@ int main() {
 			int16_t f2_output = biquad_filter(mixed_sample, &formant2);
 			int16_t f3_output = biquad_filter(mixed_sample, &formant3);
 
-			mixed_sample = (f1_output/3)+(f2_output/3)+(f3_output/3);
-
-			// Soft clipping
-			float norm = mixed_sample / 32767.0f;
-			norm = tanhf(norm);
-			mixed_sample = (int16_t)(norm*32767);
+			mixed_sample = (f1_output)+(f2_output/2)+(f3_output/4);
 
 			// write to both channels
 			buffer[2*i] = mixed_sample;
