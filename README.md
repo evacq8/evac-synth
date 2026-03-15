@@ -11,22 +11,22 @@ This project probably won't get far but atleast I'll learn from it.
 * Takes in MIDI Input + adjusts volume based on velocity
 * Selection Menu for MIDI Devices
 * It's Polyphonic [Wow what a huge accomplishment (sarcasm)]
-* Really bad soft clipping (tanhf)
 * Pre-generated oscillator wave look-up table with linear interpolation
-* Sine, Saw, Triangle, Square oscillator functions
+* Sine, Saw, Triangle, Square, Glottal oscillator functions
+* Biquad filter
+* Formants (to mimic vowels)
+* Vibrato LFO
 
 # To-do
 
 Next:
-- [x] More Oscillators: Square, Sawtooth, Triangle
-- [x] Attack, Decay, Sustain, Release Envelopes
-- [ ] Handle clipping better
-- [ ] Biquad Filter (for High/low/band pass filters and formants)
+- [ ] Per note formants
+- [ ] Settings file
 
 Later:
 - [ ] Delay & Reverb
-- [ ] Band-Pass Filters (& Formants)
 - [ ] Overtones
+- [ ] Allow user to play using their keyboard home row
 
 Technical Stuff:
 - [x] MIDI Device selector menus
