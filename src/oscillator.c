@@ -25,15 +25,26 @@ int16_t saw_oscillator(float phase) {
 int16_t triangle_oscillator(float phase) {
 	return (int16_t)((fabsf(phase - 0.5f) * 4.0f - 1.0f) * 32767.0f);
 }
-int16_t glottal_oscillator(float phase) { // used to mimic sound produced in human voice box
-	float val = 0.0f;
-	if (phase < 0.7f) {
-		float normalized_phase = phase / 0.7f;
-		// Sine squared
-		val = sinf(normalized_phase * M_PI);
-		val *= val;
-	} else { val = 0.0f; }
-	return (int16_t)((val - 0.25f) * 32767.0f);
+int16_t rosenbergc_oscillator(float phase) {
+	float val = 0;
+	float oq = 0.7f; // Open quotient - total time open
+	float k_asym = 0.65f;
+	if(phase < oq) {
+		float t_on = oq * k_asym;
+		if(phase < t_on) {
+			// Cubic rise
+			float n = phase / t_on;
+			val = (3 * n * n) - (2 * n * n * n);
+		} else {
+			// Quadratic fall
+			float n = (phase - t_on) / (oq - t_on);
+			val = 1 - (n * n);
+		}
+	} else {
+		val = 0;
+	}
+	val -= 0.3;
+	return (int16_t)((val) * 40000);
 }
 // OSCILLATOR FUNCTION END
 
@@ -42,6 +53,26 @@ int16_t glottal_oscillator(float phase) { // used to mimic sound produced in hum
 // Stores at int16_t (instead of float) for memory saving
 //int16_t wave_lookup_table[OSCILLATOR_TABLE_SIZE];
 
+// Print the function to the terminal
+void print_wave_table(int16_t table[]) {
+	const int rows = 15;
+	const int columns = 90;
+
+	for (int r = 0; r < rows; r++) {
+		for (int c = 0; c < columns; c++) {
+			int table_idx = OSCILLATOR_TABLE_SIZE * ((float)c/columns);
+			// Which row this sample should fall onto based on its height
+			float normalized = ((float)table[table_idx]/65536)+0.5;
+			float sample_row = (1.0f - normalized) * (rows-1);
+			int sample_row_rounded = sample_row + 0.5;
+			if(r == sample_row_rounded && sample_row < sample_row_rounded) printf("▀");
+			else if(r == sample_row_rounded && sample_row >= sample_row_rounded) printf("▄");
+			else printf(" ");
+		}
+		printf("\n");
+	}
+}
+
 // Takes in a function pointer (for an oscillator function) and wave_table pointer
 // Then it populates the wave_lookup_table using that function
 void populate_wave_table(int16_t (*function)(float), int16_t *table) {
@@ -49,6 +80,7 @@ void populate_wave_table(int16_t (*function)(float), int16_t *table) {
 		table[i] = function((float)i/(float)OSCILLATOR_TABLE_SIZE);
 	}
 	printf("Populated Wave Table.\n");
+	print_wave_table(table);
 }
 
 // This higher-level function populates wavetable with the OscillatorType ENUM used to represent different oscillators using the previous function
@@ -67,7 +99,8 @@ void set_wave_table_oscillator(OscillatorType type, int16_t *table) {
 			populate_wave_table(triangle_oscillator, table);
 			break;
 		case OSCILLATOR_GLOTTAL:
-			populate_wave_table(glottal_oscillator, table);
+			populate_wave_table(rosenbergc_oscillator, table);
+			break;
 		default:
 			break;
 	}

@@ -21,6 +21,7 @@ This project probably won't get far but atleast I'll learn from it.
 
 Next:
 - [ ] Per note formants
+- [ ] Low pass filter
 - [ ] Settings file
 
 Later:

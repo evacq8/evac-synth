@@ -111,14 +111,12 @@ int main() {
 	int16_t vibrato_osc_table[OSCILLATOR_TABLE_SIZE]; // LFO which controls pitch variations
 	set_wave_table_oscillator(OSCILLATOR_SINE, vibrato_osc_table);
 	
-	
-
 	BiquadVariables formant1;
-	biquad_setup_bandpass(850, 20, &formant1);
+	biquad_setup_bandpass(850, 8, &formant1);
 	BiquadVariables formant2;
-	biquad_setup_bandpass(1220, 25, &formant2);
+	biquad_setup_bandpass(1220, 8, &formant2);
 	BiquadVariables formant3;
-	biquad_setup_bandpass(2800, 25, &formant3);
+	biquad_setup_bandpass(2800, 8, &formant3);
 
 	while(1) {
 		// + Convert midi events to note elements to add to notes[] +
